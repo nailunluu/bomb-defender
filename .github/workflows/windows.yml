@@ -86,4 +86,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create '${{ github.ref_name }}' 'dist/Bomb Defender.zip' --title 'Bomb Defender' --generate-notes
+          gh release create '${{ github.ref_name }}' 'dist/Bomb Defender.zip#Bomb Defender.zip' --title 'Bomb Defender' --generate-notes
