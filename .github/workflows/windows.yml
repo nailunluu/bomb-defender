@@ -28,7 +28,13 @@ jobs:
           include-templates: true
 
       - name: Godot surumunu kontrol et
-        run: godot --version
+        run: |
+          $godotLink = Get-Item -LiteralPath $env:GODOT -ErrorAction Stop
+          $godotExe = [string]$godotLink.Target
+          if ([string]::IsNullOrWhiteSpace($godotExe) -or -not (Test-Path -LiteralPath $godotExe)) { throw 'Godot executable symlink target not found' }
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "BOMB_DEFENDER_GODOT_EXE=$godotExe" -Encoding utf8
+          & $godotExe --version
+          if ($LASTEXITCODE -ne 0) { throw 'Godot version check failed' }
 
       - name: Windows EXE simgesi icin rcedit kur
         run: |
@@ -44,14 +50,14 @@ jobs:
       - name: Kaynaklari Godot'a import et ve GDScript'i denetle
         run: |
           $importLog = Join-Path $env:RUNNER_TEMP 'godot-import.log'
-          godot --headless --path . --editor --quit --verbose 2>&1 | Tee-Object -FilePath $importLog
+          & $env:BOMB_DEFENDER_GODOT_EXE --headless --path . --editor --quit --verbose 2>&1 | Tee-Object -FilePath $importLog
           $importExitCode = $LASTEXITCODE
           if ($importExitCode -ne 0) { throw "Godot import failed with exit code $importExitCode. See $importLog" }
 
       - name: Windows EXE olustur
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          godot --headless --path . --export-release 'Windows Desktop' 'dist/Bomb Defender.exe'
+          & $env:BOMB_DEFENDER_GODOT_EXE --headless --path . --export-release 'Windows Desktop' 'dist/Bomb Defender.exe'
           if ($LASTEXITCODE -ne 0) { throw 'Godot Windows export basarisiz' }
           if (-not (Test-Path 'dist/Bomb Defender.exe')) { throw 'EXE olusmadi' }
           if (-not (Test-Path 'dist/Bomb Defender.pck')) { throw 'PCK olusmadi' }
