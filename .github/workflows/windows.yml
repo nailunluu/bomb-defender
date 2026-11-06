@@ -32,8 +32,10 @@ jobs:
           $godotExe = Join-Path (Join-Path $env:USERPROFILE 'godot') 'Godot_v4.4.1-stable_win64.exe'
           if (-not (Test-Path -LiteralPath $godotExe)) { throw "Godot executable not found: $godotExe" }
           Add-Content -LiteralPath $env:GITHUB_ENV -Value "BOMB_DEFENDER_GODOT_EXE=$godotExe" -Encoding utf8
-          & $godotExe --version
-          if ($LASTEXITCODE -ne 0) { throw 'Godot version check failed' }
+          $godotVersion = (& $godotExe --version | Out-String).Trim()
+          Write-Output $godotVersion
+          if ($godotVersion -notmatch '^4\.4\.1') { throw "Unexpected Godot version: $godotVersion" }
+          exit 0
 
       - name: Windows EXE simgesi icin rcedit kur
         run: |
