@@ -29,9 +29,8 @@ jobs:
 
       - name: Godot surumunu kontrol et
         run: |
-          $godotLink = Get-Item -LiteralPath $env:GODOT -ErrorAction Stop
-          $godotExe = [string]$godotLink.Target
-          if ([string]::IsNullOrWhiteSpace($godotExe) -or -not (Test-Path -LiteralPath $godotExe)) { throw 'Godot executable symlink target not found' }
+          $godotExe = Join-Path (Join-Path $env:USERPROFILE 'godot') 'Godot_v4.4.1-stable_win64.exe'
+          if (-not (Test-Path -LiteralPath $godotExe)) { throw "Godot executable not found: $godotExe" }
           Add-Content -LiteralPath $env:GITHUB_ENV -Value "BOMB_DEFENDER_GODOT_EXE=$godotExe" -Encoding utf8
           & $godotExe --version
           if ($LASTEXITCODE -ne 0) { throw 'Godot version check failed' }
