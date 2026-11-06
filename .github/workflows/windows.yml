@@ -51,15 +51,20 @@ jobs:
       - name: Kaynaklari Godot'a import et ve GDScript'i denetle
         run: |
           $importLog = Join-Path $env:RUNNER_TEMP 'godot-import.log'
-          & $env:BOMB_DEFENDER_GODOT_EXE --headless --path . --editor --quit --verbose 2>&1 | Tee-Object -FilePath $importLog
-          $importExitCode = $LASTEXITCODE
-          if ($importExitCode -ne 0) { throw "Godot import failed with exit code $importExitCode. See $importLog" }
+          $importStdOut = Join-Path $env:RUNNER_TEMP 'godot-import.stdout.log'
+          $importStdErr = Join-Path $env:RUNNER_TEMP 'godot-import.stderr.log'
+          $importProcess = Start-Process -FilePath $env:BOMB_DEFENDER_GODOT_EXE -ArgumentList '--headless --path . --editor --quit --verbose' -Wait -PassThru -RedirectStandardOutput $importStdOut -RedirectStandardError $importStdErr
+          @($importStdOut, $importStdErr) | ForEach-Object { if (Test-Path -LiteralPath $_) { Get-Content -LiteralPath $_ } } | Tee-Object -FilePath $importLog
+          if ($importProcess.ExitCode -ne 0) { throw "Godot import failed with exit code $($importProcess.ExitCode). See $importLog" }
 
       - name: Windows EXE olustur
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          & $env:BOMB_DEFENDER_GODOT_EXE --headless --path . --export-release 'Windows Desktop' 'dist/Bomb Defender.exe'
-          if ($LASTEXITCODE -ne 0) { throw 'Godot Windows export basarisiz' }
+          $exportStdOut = Join-Path $env:RUNNER_TEMP 'godot-export.stdout.log'
+          $exportStdErr = Join-Path $env:RUNNER_TEMP 'godot-export.stderr.log'
+          $exportProcess = Start-Process -FilePath $env:BOMB_DEFENDER_GODOT_EXE -ArgumentList '--headless --path . --export-release "Windows Desktop" "dist/Bomb Defender.exe"' -Wait -PassThru -RedirectStandardOutput $exportStdOut -RedirectStandardError $exportStdErr
+          @($exportStdOut, $exportStdErr) | ForEach-Object { if (Test-Path -LiteralPath $_) { Get-Content -LiteralPath $_ } }
+          if ($exportProcess.ExitCode -ne 0) { throw "Godot Windows export failed with exit code $($exportProcess.ExitCode)" }
           if (-not (Test-Path 'dist/Bomb Defender.exe')) { throw 'EXE olusmadi' }
           if (-not (Test-Path 'dist/Bomb Defender.pck')) { throw 'PCK olusmadi' }
           $productName = (& (Join-Path $env:RUNNER_TEMP 'rcedit-x64.exe') 'dist/Bomb Defender.exe' --get-version-string ProductName | Out-String).Trim()
