@@ -28,7 +28,10 @@ jobs:
           include-templates: true
 
       - name: Godot surumunu kontrol et
-        run: godot --version
+        run: |
+          $godotPath = (Get-Command godot -CommandType Application -ErrorAction Stop).Source
+          & $godotPath --version
+          if ($LASTEXITCODE -ne 0) { throw 'Godot surumu okunamadi' }
 
       - name: Windows EXE simgesi icin rcedit kur
         run: |
@@ -43,8 +46,11 @@ jobs:
 
       - name: Kaynaklari Godot'a import et ve GDScript'i denetle
         run: |
-          godot --headless --path . --editor --quit
-          if ($LASTEXITCODE -ne 0) { throw 'Godot import basarisiz' }
+          $godotPath = (Get-Command godot -CommandType Application -ErrorAction Stop).Source
+          $importLog = Join-Path $env:RUNNER_TEMP 'godot-import.log'
+          & $godotPath --headless --path . --editor --quit --verbose 2>&1 | Tee-Object -FilePath $importLog
+          $importExitCode = $LASTEXITCODE
+          if ($importExitCode -ne 0) { throw "Godot import failed with exit code $importExitCode. See $importLog" }
 
       - name: Windows EXE olustur
         run: |
