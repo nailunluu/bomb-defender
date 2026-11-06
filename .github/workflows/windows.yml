@@ -1,0 +1,75 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Bomb Defender (Windows x64)
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Kaynaklari al
+        uses: actions/checkout@v4
+
+      - name: Godot 4.4.1 ve Windows export template kur
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+
+      - name: Godot surumunu kontrol et
+        run: godot --version
+
+      - name: Windows EXE simgesi icin rcedit kur
+        run: |
+          $godotSettingsDir = Join-Path $env:APPDATA 'Godot'
+          New-Item -ItemType Directory -Force -Path $godotSettingsDir | Out-Null
+          $rceditPath = Join-Path $env:RUNNER_TEMP 'rcedit-x64.exe'
+          Invoke-WebRequest -Uri 'https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe' -OutFile $rceditPath
+          $rceditConfigPath = $rceditPath.Replace('\', '/')
+          $settingsPath = Join-Path $godotSettingsDir 'editor_settings-4.4.tres'
+          $settings = '[gd_resource type="EditorSettings" format=3]' + "`n`n[resource]`n" + 'export/windows/rcedit = "' + $rceditConfigPath + '"' + "`n"
+          [System.IO.File]::WriteAllText($settingsPath, $settings, [System.Text.UTF8Encoding]::new($false))
+
+      - name: Kaynaklari Godot'a import et ve GDScript'i denetle
+        run: |
+          godot --headless --path . --editor --quit
+          if ($LASTEXITCODE -ne 0) { throw 'Godot import basarisiz' }
+
+      - name: Windows EXE olustur
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          godot --headless --path . --export-release 'Windows Desktop' 'dist/Bomb Defender.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Godot Windows export basarisiz' }
+          if (-not (Test-Path 'dist/Bomb Defender.exe')) { throw 'EXE olusmadi' }
+          if (-not (Test-Path 'dist/Bomb Defender.pck')) { throw 'PCK olusmadi' }
+          $productName = (& (Join-Path $env:RUNNER_TEMP 'rcedit-x64.exe') 'dist/Bomb Defender.exe' --get-version-string ProductName | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $productName -ne 'Bomb Defender') { throw 'Windows EXE icon or metadata was not applied' }
+
+      - name: Oyuncular icin ZIP paketle
+        run: |
+          Compress-Archive -LiteralPath 'dist/Bomb Defender.exe', 'dist/Bomb Defender.pck' -DestinationPath 'dist/Bomb Defender.zip' -Force
+
+      - name: Indirilebilir Windows paketini yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bomb-Defender-Windows
+          path: dist/Bomb Defender.zip
+          if-no-files-found: error
+
+      - name: Etiketle yayinlanirsa GitHub Releases olustur
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create '${{ github.ref_name }}' 'dist/Bomb Defender.zip' --title 'Bomb Defender' --generate-notes

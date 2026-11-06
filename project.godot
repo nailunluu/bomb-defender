@@ -1,0 +1,27 @@
+; Bomb Defender - Godot 4.x project
+config_version=5
+
+[application]
+config/name="Bomb Defender"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.0", "GL Compatibility")
+config/description="Bomb Defender - 2D bomba ve labirent macerası"
+config/icon="res://assets/icon.png"
+config/windows_native_icon="res://assets/icon.ico"
+boot_splash/bg_color=Color(0.043137, 0.062745, 0.12549, 1)
+boot_splash/show_image=false
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=800
+window/size/window_width_override=1280
+window/size/window_height_override=800
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+
+[physics]
+common/physics_ticks_per_second=60

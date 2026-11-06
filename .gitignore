@@ -1,0 +1,19 @@
+# Godot 4 project cache / editor state
+.godot/
+
+# Local OS/editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Exported games / builds (keep source files in the repository)
+build/
+dist/
+*.exe
+*.pck
+*.app/
+*.dmg
+*.apk
+*.aab
